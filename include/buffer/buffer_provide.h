@@ -12,15 +12,16 @@
 #include <vector>
 #include <memory>
 
-#include <utils/buffer.h>
-
+#include "buffer/byte_buffer.h"
 #include "buffer/buffer_id.h"
 
 namespace eular {
-
 class UringService;
 class Fiber;
 struct UringOpBase;
+} // namespace eular
+
+namespace couring {
 
 class BufferProvide {
 public:
@@ -31,7 +32,7 @@ public:
     BufferProvide(const BufferProvide&) = delete;
     BufferProvide& operator=(const BufferProvide&) = delete;
 
-    BufferProvide(const ByteBuffer &buffer, UringService *service, int32_t gid);
+    BufferProvide(const ByteBuffer &buffer, eular::UringService *service, int32_t gid);
     ~BufferProvide();
 
     BufferId *acquire();
@@ -40,17 +41,17 @@ public:
     int32_t gid() const noexcept { return m_bufferId.gid(); }
 
 private:
-    bool                         m_inuse;
-    UringService*                m_uringService;
-    BufferId                     m_bufferId;
-    std::shared_ptr<UringOpBase> m_uringOp;
-    std::shared_ptr<Fiber>       m_fiber;
+    bool                                m_inuse;
+    eular::UringService*                m_uringService;
+    BufferId                            m_bufferId;
+    std::shared_ptr<eular::UringOpBase> m_uringOp;
+    std::shared_ptr<eular::Fiber>       m_fiber;
 };
 
-} // namespace eular
-
-namespace couring {
-using BufferProvide = eular::BufferProvide;
 } // namespace couring
+
+namespace eular {
+using BufferProvide = couring::BufferProvide;
+} // namespace eular
 
 #endif // __COURING_BUFFER_PROVIDE_H__

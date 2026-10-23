@@ -8,6 +8,8 @@
 #ifndef __COURING_BUFFER_H__
 #define __COURING_BUFFER_H__
 
+#include "buffer/byte_buffer.h"
+#include "buffer/bitmap.h"
 #include "buffer/buffer_id.h"
 #include "buffer/buffer_registration.h"
 #include "buffer/buffer_provide.h"

@@ -16,8 +16,6 @@
 #include <string>
 #include <functional>
 
-#include <utils/string8.h>
-
 namespace eular {
 
 class Scheduler
@@ -27,10 +25,10 @@ public:
     using WP  = std::weak_ptr<Scheduler>;
     using Ptr = std::unique_ptr<Scheduler>;
 
-    Scheduler(const eular::String8 &name = "") noexcept;
+    Scheduler(const std::string &name = "") noexcept;
     virtual ~Scheduler() noexcept;
 
-    const eular::String8 &name() const noexcept { return m_name; }
+    const std::string &name() const noexcept { return m_name; }
     static Scheduler* GetScheduler() noexcept;
 
     void start() noexcept;
@@ -94,7 +92,7 @@ protected:
     std::list<Fiber::SP>        m_activeFibers;  // Active suspended/running fibers
 
 private:
-    eular::String8              m_name;
+    std::string                 m_name;
     std::list<FiberTask>        m_fiberQueue;    // Task queue
 };
 

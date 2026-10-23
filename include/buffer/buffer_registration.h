@@ -13,14 +13,15 @@
 #include <memory>
 #include <sys/uio.h>
 
-#include <utils/buffer.h>
-#include <utils/bitmap.h>
-
+#include "buffer/byte_buffer.h"
+#include "buffer/bitmap.h"
 #include "buffer/buffer_id.h"
 
 namespace eular {
-
 class UringService;
+} // namespace eular
+
+namespace couring {
 
 class BufferRegistration {
 public:
@@ -31,7 +32,7 @@ public:
     BufferRegistration(const BufferRegistration&) = delete;
     BufferRegistration& operator=(const BufferRegistration&) = delete;
 
-    BufferRegistration(const std::vector<ByteBuffer> &bufferVec, UringService *service);
+    BufferRegistration(const std::vector<ByteBuffer> &bufferVec, eular::UringService *service);
     ~BufferRegistration();
 
     BufferId *acquire();
@@ -40,15 +41,15 @@ public:
     size_t size() const noexcept { return m_bufferIdVec.size(); }
 
 private:
-    eular::BitMap         m_bitmap;
-    UringService*         m_uringService;
+    couring::BitMap       m_bitmap;
+    eular::UringService*  m_uringService;
     std::vector<BufferId> m_bufferIdVec;
 };
 
-} // namespace eular
-
-namespace couring {
-using BufferRegistration = eular::BufferRegistration;
 } // namespace couring
+
+namespace eular {
+using BufferRegistration = couring::BufferRegistration;
+} // namespace eular
 
 #endif // __COURING_BUFFER_REGISTRATION_H__

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(couring VERSION 0.1.0 LANGUAGES C CXX ASM)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -59,13 +59,11 @@ target_include_directories(couring PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/3rd/eular/fcontext/include
     ${LIBURING_DIR}/src/include
-    /usr/local/include
 )
 
 target_link_libraries(couring PUBLIC
     fcontext
     uring_static
-    utils
     pthread
     dl
 )

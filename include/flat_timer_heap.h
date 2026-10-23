@@ -68,7 +68,7 @@ public:
     Timer::SP addTimer(uint64_t ms, Timer::Callback cb, uint32_t recycle = 0) noexcept {
         try {
             uint64_t now = CurrentTimeMs();
-            uint64_t id = ++s_idCounter;
+            uint64_t id = NextTimerId();
             Timer::SP timer(new (std::nothrow) Timer(id, now + ms, recycle, std::move(cb)));
             if (!timer) {
                 return nullptr;
@@ -187,8 +187,12 @@ private:
     }
 
 private:
+    static uint64_t NextTimerId() noexcept {
+        static std::atomic<uint64_t> s_idCounter{0};
+        return ++s_idCounter;
+    }
+
     std::vector<Timer::SP> m_heap;
-    static inline std::atomic<uint64_t> s_idCounter{0};
 };
 
 } // namespace couring

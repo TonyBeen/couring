@@ -32,7 +32,7 @@ void demo_buffer_registration(eular::UringService& service) noexcept
     constexpr size_t kBufferCount = 4;
 
     // 1. Prepare user memory buffers
-    std::vector<eular::ByteBuffer> buffers;
+    std::vector<couring::ByteBuffer> buffers;
     for (size_t i = 0; i < kBufferCount; ++i) {
         buffers.emplace_back(kBlockSize);
     }
@@ -100,7 +100,7 @@ void demo_buffer_provide(eular::UringService& service) noexcept
     constexpr size_t kBufSize = 2048;
     constexpr int32_t kGroupId = 10;
 
-    eular::ByteBuffer buf(kBufSize);
+    couring::ByteBuffer buf(kBufSize);
 
     // 1. Provide the buffer to kernel group gid = 10
     //    This submits IORING_OP_PROVIDE_BUFFERS to kernel and awaits confirmation.

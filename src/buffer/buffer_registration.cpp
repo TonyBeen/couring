@@ -14,9 +14,9 @@
 #endif
 #define LOG_TAG "BufferRegistration"
 
-namespace eular {
+namespace couring {
 
-BufferRegistration::BufferRegistration(const std::vector<ByteBuffer> &bufferVec, UringService *service) :
+BufferRegistration::BufferRegistration(const std::vector<ByteBuffer> &bufferVec, eular::UringService *service) :
     m_uringService(service)
 {
     if (bufferVec.empty() || service == nullptr) {
@@ -56,22 +56,13 @@ BufferRegistration::~BufferRegistration()
 
 BufferId *BufferRegistration::acquire()
 {
-    BufferId *result = nullptr;
-    if (m_bitmap.count() >= m_bufferIdVec.size()) {
-        return result;
+    int64_t idx = m_bitmap.find_first_unset();
+    if (idx < 0 || static_cast<size_t>(idx) >= m_bufferIdVec.size()) {
+        return nullptr;
     }
 
-    for (uint32_t i = 0; i < m_bitmap.size(); ++i) {
-        if (m_bitmap.at(i)) {
-            continue;
-        }
-
-        m_bitmap.set(i, true);
-        result = &m_bufferIdVec[i];
-        break; // Fixed: Break immediately upon finding first free buffer!
-    }
-
-    return result;
+    m_bitmap.set(static_cast<size_t>(idx), true);
+    return &m_bufferIdVec[static_cast<size_t>(idx)];
 }
 
 void BufferRegistration::release(const BufferId *id)
@@ -87,4 +78,4 @@ void BufferRegistration::release(const BufferId *id)
     }
 }
 
-} // namespace eular
+} // namespace couring

@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace eular {
+namespace couring {
 
 class BufferRegistration;
 class BufferProvide;
@@ -61,10 +61,10 @@ private:
     void*    m_buffer;
 };
 
-} // namespace eular
-
-namespace couring {
-using BufferId = eular::BufferId;
 } // namespace couring
+
+namespace eular {
+using BufferId = couring::BufferId;
+} // namespace eular
 
 #endif // __COURING_BUFFER_ID_H__

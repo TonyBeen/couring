@@ -1,11 +1,64 @@
 #include "catch.hpp"
 #include "uring_service.h"
-#include "buffer/buffer_registration.h"
-#include "buffer/buffer_provide.h"
-#include <utils/buffer.h>
+#include "buffer/buffer.h"
+#include "io/co_file.h"
+#include <unistd.h>
+#include <cstring>
+
+TEST_CASE("ByteBuffer basic operations", "[byte_buffer]") {
+    using namespace couring;
+
+    ByteBuffer buf(128);
+    REQUIRE(buf.capacity() >= 128);
+    REQUIRE(buf.size() == 0);
+    REQUIRE(buf.empty());
+
+    buf.append("hello world", 11);
+    REQUIRE(buf.size() == 11);
+    REQUIRE(!buf.empty());
+    REQUIRE(std::memcmp(buf.data(), "hello world", 11) == 0);
+
+    ByteBuffer buf2 = std::move(buf);
+    REQUIRE(buf2.size() == 11);
+    REQUIRE(buf.size() == 0);
+    REQUIRE(buf.data() == nullptr);
+
+    ByteBuffer buf3;
+    buf3 = buf2;
+    REQUIRE(buf3.size() == 11);
+    REQUIRE(std::memcmp(buf3.data(), "hello world", 11) == 0);
+}
+
+TEST_CASE("BitMap compact operations", "[bitmap]") {
+    using namespace couring;
+
+    BitMap bm(130);
+    REQUIRE(bm.size() == 130);
+    REQUIRE(bm.count() == 0);
+
+    REQUIRE(bm.find_first_unset() == 0);
+    bm.set(0, true);
+    REQUIRE(bm.at(0) == true);
+    REQUIRE(bm.count() == 1);
+    REQUIRE(bm.find_first_unset() == 1);
+
+    bm.set(64, true);
+    REQUIRE(bm.at(64) == true);
+    REQUIRE(bm.count() == 2);
+
+    bm.set(0, false);
+    REQUIRE(bm.at(0) == false);
+    REQUIRE(bm.count() == 1);
+    REQUIRE(bm.find_first_unset() == 0);
+
+    bm.clear();
+    REQUIRE(bm.count() == 0);
+    REQUIRE(bm.find_first_unset() == 0);
+}
 
 TEST_CASE("BufferRegistration basic acquire and release", "[buffer_registration]") {
     using namespace eular;
+    using namespace couring;
 
     UringService service(64);
     REQUIRE(service.isValid());
@@ -38,6 +91,7 @@ TEST_CASE("BufferRegistration basic acquire and release", "[buffer_registration]
 
 TEST_CASE("BufferProvide basic acquire and release in coroutine", "[buffer_provide]") {
     using namespace eular;
+    using namespace couring;
 
     UringService service(64);
     REQUIRE(service.isValid());
@@ -61,11 +115,6 @@ TEST_CASE("BufferProvide basic acquire and release in coroutine", "[buffer_provi
 
     service.start();
 }
-
-#include "buffer/buffer.h"
-#include "io/co_file.h"
-#include <unistd.h>
-#include <cstring>
 
 TEST_CASE("BufferRegistration with co_read_fixed and co_write_fixed", "[buffer_fixed_io]") {
     using namespace eular;
@@ -109,4 +158,3 @@ TEST_CASE("BufferRegistration with co_read_fixed and co_write_fixed", "[buffer_f
 
     service.start();
 }
-

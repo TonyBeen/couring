@@ -12,13 +12,9 @@
 #include <cstddef>
 #include <sys/types.h>
 
-namespace eular {
-class BufferId;
-}
-
 namespace couring {
 
-using BufferId = eular::BufferId;
+class BufferId;
 
 ssize_t co_read_file(int32_t fd, void *buf, size_t len, int64_t offset = 0, uint64_t timeout_ms = 0) noexcept;
 ssize_t co_write_file(int32_t fd, const void *buf, size_t len, int64_t offset = 0, uint64_t timeout_ms = 0) noexcept;

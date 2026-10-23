@@ -192,14 +192,20 @@ public:
 private:
     struct SendWaiter {
         eular::Fiber::SP fiber;
-        T*               data{nullptr};
-        bool             done{false};
+        T*               data;
+        bool             done;
+
+        SendWaiter(eular::Fiber::SP f = nullptr, T* d = nullptr, bool dn = false) noexcept
+            : fiber(std::move(f)), data(d), done(dn) {}
     };
 
     struct RecvWaiter {
         eular::Fiber::SP fiber;
-        T*               dest{nullptr};
-        bool             ok{false};
+        T*               dest;
+        bool             ok;
+
+        RecvWaiter(eular::Fiber::SP f = nullptr, T* dst = nullptr, bool o = false) noexcept
+            : fiber(std::move(f)), dest(dst), ok(o) {}
     };
 
     static void scheduleFiber(eular::Fiber::SP fiber) noexcept {

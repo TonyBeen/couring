@@ -9,8 +9,8 @@
 
 #include <unistd.h>
 #include <sys/types.h>
+#include <pthread.h>
 
-#include <utils/thread.h>
 #include "logger_internal.h"
 
 #ifdef LOG_TAG
@@ -18,11 +18,30 @@
 #endif
 #define LOG_TAG "scheduler"
 
+namespace {
+
+static void SetCurrentThreadName(const std::string &name) noexcept {
+    if (!name.empty()) {
+        std::string threadName = name.substr(0, 15);
+        pthread_setname_np(pthread_self(), threadName.c_str());
+    }
+}
+
+static std::string GetCurrentThreadName() noexcept {
+    char name[16] = {0};
+    if (pthread_getname_np(pthread_self(), name, sizeof(name)) == 0 && name[0] != '\0') {
+        return name;
+    }
+    return "thread";
+}
+
+} // namespace
+
 namespace eular {
 
 static thread_local Scheduler *gScheduler = nullptr;
 
-Scheduler::Scheduler(const eular::String8 &name) noexcept :
+Scheduler::Scheduler(const std::string &name) noexcept :
     m_stopping(false),
     m_name(name)
 {
@@ -34,7 +53,7 @@ Scheduler::Scheduler(const eular::String8 &name) noexcept :
         this->run();
     }));
 
-    Thread::SetName(name);
+    SetCurrentThreadName(name);
     LOGD("Scheduler created, name=%s, root_thread_id=%ld", name.c_str(), (long)gettid());
 }
 
@@ -65,7 +84,7 @@ void Scheduler::stop() noexcept
 
 void Scheduler::run() noexcept
 {
-    LOGI("Scheduler::run() entered in thread [%s:%ld]", Thread::GetName().c_str(), (long)gettid());
+    LOGI("Scheduler::run() entered in thread [%s:%ld]", GetCurrentThreadName().c_str(), (long)gettid());
     setThis();
 
     Fiber::SP idleFiber(new (std::nothrow) Fiber([this]() noexcept {

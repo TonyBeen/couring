@@ -17,9 +17,9 @@
 #endif
 #define LOG_TAG "BufferProvide"
 
-namespace eular {
+namespace couring {
 
-BufferProvide::BufferProvide(const ByteBuffer &buffer, UringService *service, int32_t gid) :
+BufferProvide::BufferProvide(const ByteBuffer &buffer, eular::UringService *service, int32_t gid) :
     m_inuse(true),
     m_uringService(service)
 {
@@ -28,14 +28,14 @@ BufferProvide::BufferProvide(const ByteBuffer &buffer, UringService *service, in
         return;
     }
 
-    m_uringOp.reset(new (std::nothrow) UringOpProvideBuffer([this] (int32_t status) {
+    m_uringOp.reset(new (std::nothrow) eular::UringOpProvideBuffer([this] (int32_t status) {
         if (status < 0) {
             LOGE("provide buffer error: %d", status);
         }
 
         m_inuse = false;
         if (m_fiber) {
-            Scheduler* sched = Scheduler::GetScheduler();
+            eular::Scheduler* sched = eular::Scheduler::GetScheduler();
             if (sched) {
                 sched->schedule(m_fiber);
             } else {
@@ -49,12 +49,12 @@ BufferProvide::BufferProvide(const ByteBuffer &buffer, UringService *service, in
     }
 
     m_bufferId.m_buffer = const_cast<uint8_t *>(buffer.const_data());
-    m_bufferId.m_size = bufSize;
+    m_bufferId.m_size = static_cast<uint32_t>(bufSize);
     m_bufferId.m_gid = gid;
     m_bufferId.m_bid = 0;
     m_bufferId.m_isRegistrationBuffer = false;
 
-    m_fiber = Fiber::GetThis();
+    m_fiber = eular::Fiber::GetThis();
     int32_t status = service->provideBuffers(m_bufferId.m_buffer, bufSize, 1, gid, m_uringOp.get());
     if (status < 0) {
         LOGE("provideBuffers failed, status=%d", status);
@@ -63,7 +63,7 @@ BufferProvide::BufferProvide(const ByteBuffer &buffer, UringService *service, in
     }
 
     if (m_fiber) {
-        Fiber::Yield2Hold();
+        eular::Fiber::Yield2Hold();
     }
 }
 
@@ -90,7 +90,7 @@ void BufferProvide::release(const BufferId *id)
         return;
     }
 
-    m_fiber = Fiber::GetThis();
+    m_fiber = eular::Fiber::GetThis();
     int32_t status = m_uringService->provideBuffers(m_bufferId.m_buffer, m_bufferId.m_size, 1, m_bufferId.m_gid, m_uringOp.get());
     if (status < 0) {
         LOGE("provideBuffers failed in release, status=%d", status);
@@ -98,8 +98,8 @@ void BufferProvide::release(const BufferId *id)
         return;
     }
     if (m_fiber) {
-        Fiber::Yield2Hold();
+        eular::Fiber::Yield2Hold();
     }
 }
 
-} // namespace eular
+} // namespace couring
