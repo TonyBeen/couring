@@ -1,3 +1,10 @@
+# Build and project directories
+build/
+build_asan/
+bak/
+.vscode/
+*.tmp
+
 # Prerequisites
 *.d
 

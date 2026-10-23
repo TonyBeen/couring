@@ -1,0 +1,7 @@
+[submodule "eular"]
+	path = 3rd/eular
+	url = https://github.com/TonyBeen/eular.git
+	branch = pkg/fcontext
+[submodule "3rd/liburing"]
+	path = 3rd/liburing
+	url = https://github.com/axboe/liburing.git

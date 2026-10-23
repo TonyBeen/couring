@@ -1,0 +1,101 @@
+/*************************************************************************
+    > File Name: hook.h
+    > Author: hsz
+    > Brief: System call hooking for transparent coroutine execution
+    > Created Time: 2026-10-23
+ ************************************************************************/
+
+#ifndef __COURING_HOOK_H__
+#define __COURING_HOOK_H__
+
+#include <cstdint>
+#include <cstddef>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <time.h>
+
+namespace eular {
+namespace hook {
+
+bool is_hook_enabled() noexcept;
+void set_hook_enabled(bool flag = true) noexcept;
+
+} // namespace hook
+} // namespace eular
+
+extern "C" {
+
+// Sleep
+typedef unsigned int (*sleep_fun)(unsigned int seconds);
+extern sleep_fun sleep_f;
+
+typedef int (*usleep_fun)(useconds_t usec);
+extern usleep_fun usleep_f;
+
+typedef int (*nanosleep_fun)(const struct timespec *req, struct timespec *rem);
+extern nanosleep_fun nanosleep_f;
+
+// Socket
+typedef int (*socket_fun)(int domain, int type, int protocol);
+extern socket_fun socket_f;
+
+typedef int (*connect_fun)(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+extern connect_fun connect_f;
+
+typedef int (*accept_fun)(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+extern accept_fun accept_f;
+
+typedef int (*accept4_fun)(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
+extern accept4_fun accept4_f;
+
+typedef int (*close_fun)(int fd);
+extern close_fun close_f;
+
+typedef int (*shutdown_fun)(int sockfd, int how);
+extern shutdown_fun shutdown_f;
+
+// Read / Write
+typedef ssize_t (*read_fun)(int fd, void *buf, size_t count);
+extern read_fun read_f;
+
+typedef ssize_t (*write_fun)(int fd, const void *buf, size_t count);
+extern write_fun write_f;
+
+typedef ssize_t (*recv_fun)(int sockfd, void *buf, size_t len, int flags);
+extern recv_fun recv_f;
+
+typedef ssize_t (*send_fun)(int sockfd, const void *buf, size_t len, int flags);
+extern send_fun send_f;
+
+typedef ssize_t (*recvfrom_fun)(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
+extern recvfrom_fun recvfrom_f;
+
+typedef ssize_t (*sendto_fun)(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+extern sendto_fun sendto_f;
+
+typedef ssize_t (*recvmsg_fun)(int sockfd, struct msghdr *msg, int flags);
+extern recvmsg_fun recvmsg_f;
+
+typedef ssize_t (*sendmsg_fun)(int sockfd, const struct msghdr *msg, int flags);
+extern sendmsg_fun sendmsg_f;
+
+typedef int (*recvmmsg_fun)(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, struct timespec *timeout);
+extern recvmmsg_fun recvmmsg_f;
+
+typedef int (*sendmmsg_fun)(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags);
+extern sendmmsg_fun sendmmsg_f;
+
+// Control
+typedef int (*fcntl_fun)(int fd, int cmd, ...);
+extern fcntl_fun fcntl_f;
+
+typedef int (*setsockopt_fun)(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+extern setsockopt_fun setsockopt_f;
+
+typedef int (*getsockopt_fun)(int sockfd, int level, int optname, void *optval, socklen_t *optlen);
+extern getsockopt_fun getsockopt_f;
+
+} // extern "C"
+
+#endif // __COURING_HOOK_H__
