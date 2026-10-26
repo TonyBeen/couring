@@ -81,3 +81,6 @@ target_link_libraries(benchmark_concurrency PRIVATE couring)
 
 add_executable(buffer_example examples/buffer_example.cpp)
 target_link_libraries(buffer_example PRIVATE couring)
+
+add_executable(benchmark_io examples/benchmark_io.cpp)
+target_link_libraries(benchmark_io PRIVATE couring)
