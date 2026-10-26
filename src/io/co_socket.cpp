@@ -69,12 +69,26 @@ int32_t co_accept4(int32_t listenfd, struct sockaddr *addr, socklen_t *len, int3
 
 ssize_t co_read(int32_t fd, void *buf, size_t len, uint64_t timeout_ms) noexcept
 {
-    return co_recv(fd, buf, len, 0, timeout_ms);
+    eular::UringService* service = eular::UringService::GetThis();
+    if (!service || !service->isValid()) {
+        return -static_cast<int32_t>(couring::Errc::RingNotInitialized);
+    }
+
+    return executeOpWithTimeout(service, timeout_ms, [fd, buf, len](struct io_uring_sqe *sqe) noexcept {
+        io_uring_prep_read(sqe, fd, buf, static_cast<unsigned>(len), static_cast<__u64>(-1));
+    });
 }
 
 ssize_t co_write(int32_t fd, const void *buf, size_t len, uint64_t timeout_ms) noexcept
 {
-    return co_send(fd, buf, len, 0, timeout_ms);
+    eular::UringService* service = eular::UringService::GetThis();
+    if (!service || !service->isValid()) {
+        return -static_cast<int32_t>(couring::Errc::RingNotInitialized);
+    }
+
+    return executeOpWithTimeout(service, timeout_ms, [fd, buf, len](struct io_uring_sqe *sqe) noexcept {
+        io_uring_prep_write(sqe, fd, buf, static_cast<unsigned>(len), static_cast<__u64>(-1));
+    });
 }
 
 ssize_t co_recv(int32_t fd, void *buf, size_t len, int32_t flags, uint64_t timeout_ms) noexcept

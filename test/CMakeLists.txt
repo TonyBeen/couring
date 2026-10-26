@@ -8,6 +8,7 @@ add_executable(couring_tests
     test_logger.cpp
     test_buffer.cpp
     test_sync.cpp
+    test_file_io.cpp
 )
 
 target_include_directories(couring_tests PRIVATE
