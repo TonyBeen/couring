@@ -6,6 +6,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <cstring>
@@ -345,6 +346,185 @@ TEST_CASE("Coroutine Socket accept4 and shutdown", "[io_socket_misc]") {
 
         co_close(client);
         co_close(listenfd);
+        service.stop();
+    });
+
+    service.start();
+}
+
+TEST_CASE("Coroutine File Open and Positional I/O (co_open, co_openat, co_pread, co_pwrite)", "[co_file_open_pwrite]") {
+    using namespace eular;
+    using namespace couring;
+
+    UringService service(64);
+    REQUIRE(service.isValid());
+
+    const char* testPath = "/tmp/couring_test_open_pwrite.tmp";
+    unlink(testPath);
+
+    service.schedule([&]() noexcept {
+        // Test co_open
+        int fd = co_open(testPath, O_CREAT | O_RDWR | O_TRUNC, 0644);
+        REQUIRE(fd >= 0);
+
+        // Test co_pwrite at offset 0
+        const std::string chunk1 = "CHUNK_AAA_";
+        ssize_t w1 = co_pwrite(fd, chunk1.data(), chunk1.size(), 0);
+        REQUIRE(w1 == static_cast<ssize_t>(chunk1.size()));
+
+        // Test co_pwrite at offset 20 (leaving hole)
+        const std::string chunk2 = "CHUNK_BBB_";
+        ssize_t w2 = co_pwrite(fd, chunk2.data(), chunk2.size(), 20);
+        REQUIRE(w2 == static_cast<ssize_t>(chunk2.size()));
+
+        // Test co_pread at offset 20
+        char buf2[32] = {0};
+        ssize_t r2 = co_pread(fd, buf2, chunk2.size(), 20);
+        REQUIRE(r2 == static_cast<ssize_t>(chunk2.size()));
+        REQUIRE(std::string(buf2, r2) == chunk2);
+
+        // Test co_pread at offset 0
+        char buf1[32] = {0};
+        ssize_t r1 = co_pread(fd, buf1, chunk1.size(), 0);
+        REQUIRE(r1 == static_cast<ssize_t>(chunk1.size()));
+        REQUIRE(std::string(buf1, r1) == chunk1);
+
+        co_close(fd);
+        unlink(testPath);
+        service.stop();
+    });
+
+    service.start();
+}
+
+TEST_CASE("Coroutine File Vectored I/O (co_pwritev and co_preadv)", "[co_file_vectored]") {
+    using namespace eular;
+    using namespace couring;
+
+    UringService service(64);
+    REQUIRE(service.isValid());
+
+    const char* testPath = "/tmp/couring_test_vectored.tmp";
+    unlink(testPath);
+
+    service.schedule([&]() noexcept {
+        int fd = co_open(testPath, O_CREAT | O_RDWR | O_TRUNC, 0644);
+        REQUIRE(fd >= 0);
+
+        // Prepare 3 vector buffers (e.g. Header, Meta, Body)
+        char h[] = "HEAD:";
+        char m[] = "META:";
+        char b[] = "BODY_DATA_BLOCK";
+
+        struct iovec iov_out[3];
+        iov_out[0].iov_base = h;
+        iov_out[0].iov_len = 5;
+        iov_out[1].iov_base = m;
+        iov_out[1].iov_len = 5;
+        iov_out[2].iov_base = b;
+        iov_out[2].iov_len = 15;
+
+        // Gather write at offset 10
+        ssize_t wv = co_pwritev(fd, iov_out, 3, 10);
+        REQUIRE(wv == 25);
+
+        // Scatter read back from offset 10
+        char in_h[6] = {0};
+        char in_m[6] = {0};
+        char in_b[16] = {0};
+
+        struct iovec iov_in[3];
+        iov_in[0].iov_base = in_h;
+        iov_in[0].iov_len = 5;
+        iov_in[1].iov_base = in_m;
+        iov_in[1].iov_len = 5;
+        iov_in[2].iov_base = in_b;
+        iov_in[2].iov_len = 15;
+
+        ssize_t rv = co_preadv(fd, iov_in, 3, 10);
+        REQUIRE(rv == 25);
+
+        REQUIRE(std::string(in_h, 5) == "HEAD:");
+        REQUIRE(std::string(in_m, 5) == "META:");
+        REQUIRE(std::string(in_b, 15) == "BODY_DATA_BLOCK");
+
+        co_close(fd);
+        unlink(testPath);
+        service.stop();
+    });
+
+    service.start();
+}
+
+TEST_CASE("Coroutine File Exact Helpers (co_pread_exact and co_pwrite_all)", "[co_file_exact]") {
+    using namespace eular;
+    using namespace couring;
+
+    UringService service(64);
+    REQUIRE(service.isValid());
+
+    const char* testPath = "/tmp/couring_test_exact.tmp";
+    unlink(testPath);
+
+    service.schedule([&]() noexcept {
+        int fd = co_open(testPath, O_CREAT | O_RDWR | O_TRUNC, 0644);
+        REQUIRE(fd >= 0);
+
+        std::string payload(8192, 'Z');
+        ssize_t w = co_pwrite_all(fd, payload.data(), payload.size(), 0);
+        REQUIRE(w == static_cast<ssize_t>(payload.size()));
+
+        std::string readBuf(8192, '\0');
+        ssize_t r = co_pread_exact(fd, &readBuf[0], readBuf.size(), 0);
+        REQUIRE(r == static_cast<ssize_t>(readBuf.size()));
+        REQUIRE(readBuf == payload);
+
+        co_close(fd);
+        unlink(testPath);
+        service.stop();
+    });
+
+    service.start();
+}
+
+TEST_CASE("Coroutine File Preallocation and Sync (co_fallocate, co_fsync, co_fdatasync)", "[co_file_fallocate_sync]") {
+    using namespace eular;
+    using namespace couring;
+
+    UringService service(64);
+    REQUIRE(service.isValid());
+
+    const char* testPath = "/tmp/couring_test_fallocate.tmp";
+    unlink(testPath);
+
+    service.schedule([&]() noexcept {
+        int fd = co_open(testPath, O_CREAT | O_RDWR | O_TRUNC, 0644);
+        REQUIRE(fd >= 0);
+
+        // Preallocate 1MB contiguous space
+        int falloc_res = co_fallocate(fd, 0, 0, 1024 * 1024);
+        REQUIRE(falloc_res == 0);
+
+        // Verify file size via standard fstat
+        struct stat st{};
+        REQUIRE(fstat(fd, &st) == 0);
+        REQUIRE(st.st_size >= 1024 * 1024);
+
+        // Write some data and sync
+        const char msg[] = "Sync data test";
+        ssize_t w = co_pwrite(fd, msg, sizeof(msg), 0);
+        REQUIRE(w == sizeof(msg));
+
+        // Test co_fdatasync
+        int ds_ret = co_fdatasync(fd);
+        REQUIRE(ds_ret == 0);
+
+        // Test co_fsync
+        int s_ret = co_fsync(fd);
+        REQUIRE(s_ret == 0);
+
+        co_close(fd);
+        unlink(testPath);
         service.stop();
     });
 
